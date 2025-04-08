@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import io
 
 # ----------------------------
 # Category-specific scoring thresholds
@@ -122,12 +123,10 @@ if uploaded_file:
 
         def compute_score(row):
             try:
-                # Fill missing fiber, fruits, protein with 0
                 fiber = row[required[6]] if pd.notnull(row[required[6]]) else 0
                 fruits = row[required[5]] if pd.notnull(row[required[5]]) else 0
                 protein = row[required[7]] if pd.notnull(row[required[7]]) else 0
 
-                # Check critical values: energy, sugar, sat fat, sodium
                 critical_missing = []
                 for idx in [1, 2, 3, 4]:
                     if pd.isnull(row[required[idx]]):
@@ -163,9 +162,14 @@ if uploaded_file:
         st.success("NutriScore calculated for all products!")
         st.dataframe(df[['Products', 'NutriScore Points', 'NutriScore Grade']])
 
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False)
+        output.seek(0)
+
         st.download_button(
             label="Download Results as Excel",
-            data=df.to_excel(index=False, engine='openpyxl'),
+            data=output,
             file_name="nutriscore_results.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
