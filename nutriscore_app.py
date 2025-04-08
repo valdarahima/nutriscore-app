@@ -142,12 +142,25 @@ if uploaded_file:
                     get_sat_fat_points(row[required[3]]) +
                     get_sodium_points(row[required[4]])
                 )
-                pos = (
-                    get_fruit_points(fruits) +
-                    get_fiber_points(fiber) +
-                    get_protein_points(protein)
-                )
-                score = neg - pos
+
+                pos_fiber = get_fiber_points(fiber)
+                pos_fruit = get_fruit_points(fruits)
+                pos_protein = get_protein_points(protein)
+
+                if category == "fat":
+                    if neg >= 7:
+                        score = neg - pos_fiber - pos_fruit
+                    else:
+                        score = neg - (pos_protein + pos_fiber + pos_fruit)
+                elif category == "general":
+                    if neg > 11:
+                        pos_protein = min(pos_protein, 2)
+                        score = neg - pos_fiber - pos_fruit - pos_protein
+                    else:
+                        score = neg - (pos_protein + pos_fiber + pos_fruit)
+                else:  # drink
+                    score = neg - (pos_protein + pos_fiber + pos_fruit)
+
                 return score, classify_nutriscore(score, category)
             except:
                 return None, "Error"
