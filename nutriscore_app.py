@@ -1,7 +1,18 @@
 import streamlit as st
 import pandas as pd
 
-# NutriScore calculation functions (simplified from EU logic)
+# ----------------------------
+# Category-specific scoring thresholds
+# ----------------------------
+CATEGORY_THRESHOLDS = {
+    "general": [(-float("inf"), 0, "A"), (1, 2, "B"), (3, 10, "C"), (11, 18, "D"), (19, float("inf"), "E")],
+    "drink": [(float("nan"), float("nan"), "A"), (0, 2, "B"), (3, 6, "C"), (7, 9, "D"), (10, float("inf"), "E")],
+    "fat": [(-float("inf"), -6, "A"), (-5, 2, "B"), (3, 10, "C"), (11, 18, "D"), (19, float("inf"), "E")]
+}
+
+# ----------------------------
+# Component scoring functions (simplified)
+# ----------------------------
 def get_energy_points(kj):
     if kj <= 335: return 0
     elif kj <= 670: return 1
@@ -76,23 +87,29 @@ def get_protein_points(protein):
     elif protein <= 8.0: return 4
     else: return 5
 
-def classify_nutriscore(score):
-    if score <= -1: return "A"
-    elif score <= 2: return "B"
-    elif score <= 10: return "C"
-    elif score <= 18: return "D"
-    else: return "E"
+# ----------------------------
+# Grade classification based on category
+# ----------------------------
+def classify_nutriscore(score, category):
+    for low, high, grade in CATEGORY_THRESHOLDS[category]:
+        if low <= score <= high:
+            return grade
+    return "?"
 
+# ----------------------------
+# Streamlit App Interface
+# ----------------------------
 st.title("NutriScore Bulk Calculator")
 st.write("Upload your Excel file with product info and get NutriScore grades calculated for each item.")
+
+category = st.selectbox("Select product category", ["general", "drink", "fat"], format_func=lambda x: x.capitalize())
 
 uploaded_file = st.file_uploader("Upload Excel File (.xlsx)", type=["xlsx"])
 
 if uploaded_file:
     df = pd.read_excel(uploaded_file, sheet_name=0)
-
-    # Rename columns to standard names (assumed from gov sheet)
     df.columns = [col.strip().split("\n")[0].strip() for col in df.columns]
+
     required = ['Products', 'Energy (kJ/100 g)', 'Sugar (g/100 g)', 'Saturates (g/100 g)',
                 'Sodium (mg/100 g)', 'Fruits, vegetables, pulses, nuts, and rapeseed...',
                 'Fibre (g/100 g)', 'Protein (g/100 g)']
@@ -101,22 +118,47 @@ if uploaded_file:
     if missing:
         st.error(f"Missing required columns: {missing}")
     else:
+        warning_rows = []
+
         def compute_score(row):
-            neg = (
-                get_energy_points(row[required[1]]) +
-                get_sugar_points(row[required[2]]) +
-                get_sat_fat_points(row[required[3]]) +
-                get_sodium_points(row[required[4]])
-            )
-            pos = (
-                get_fruit_points(row[required[5]]) +
-                get_fiber_points(row[required[6]]) +
-                get_protein_points(row[required[7]])
-            )
-            score = neg - pos
-            return score, classify_nutriscore(score)
+            try:
+                # Fill missing fiber, fruits, protein with 0
+                fiber = row[required[6]] if pd.notnull(row[required[6]]) else 0
+                fruits = row[required[5]] if pd.notnull(row[required[5]]) else 0
+                protein = row[required[7]] if pd.notnull(row[required[7]]) else 0
+
+                # Check critical values: energy, sugar, sat fat, sodium
+                critical_missing = []
+                for idx in [1, 2, 3, 4]:
+                    if pd.isnull(row[required[idx]]):
+                        critical_missing.append(required[idx])
+
+                if critical_missing:
+                    warning_rows.append((row[required[0]], critical_missing))
+                    return None, "Missing critical data"
+
+                neg = (
+                    get_energy_points(row[required[1]]) +
+                    get_sugar_points(row[required[2]]) +
+                    get_sat_fat_points(row[required[3]]) +
+                    get_sodium_points(row[required[4]])
+                )
+                pos = (
+                    get_fruit_points(fruits) +
+                    get_fiber_points(fiber) +
+                    get_protein_points(protein)
+                )
+                score = neg - pos
+                return score, classify_nutriscore(score, category)
+            except:
+                return None, "Error"
 
         df[['NutriScore Points', 'NutriScore Grade']] = df.apply(lambda row: pd.Series(compute_score(row)), axis=1)
+
+        if warning_rows:
+            st.warning("Some products have missing critical values (energy, sugar, saturated fat, sodium):")
+            for product, fields in warning_rows:
+                st.write(f"\n- {product}: missing {', '.join(fields)}")
 
         st.success("NutriScore calculated for all products!")
         st.dataframe(df[['Products', 'NutriScore Points', 'NutriScore Grade']])
