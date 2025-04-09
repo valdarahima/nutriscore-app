@@ -12,8 +12,23 @@ CATEGORY_THRESHOLDS = {
 }
 
 # ----------------------------
-# Component scoring functions (simplified)
+# Real sugar thresholds by category
 # ----------------------------
+SUGAR_SCORING = {
+    "general": [(4.5, 0), (9, 1), (13.5, 2), (18, 3), (22.5, 4), (27, 5), (31, 6), (36, 7), (40, 8), (45, 9)],
+    "drink": [(0, 0), (1.5, 1), (3, 2), (4.5, 3), (6, 4), (7.5, 5), (9, 6), (10.5, 7), (12, 8), (13.5, 9)],
+    "fat": [(4.5, 0), (9, 1), (13.5, 2), (18, 3), (22.5, 4), (27, 5), (31, 6), (36, 7), (40, 8), (45, 9)]
+}
+
+# ----------------------------
+# Component scoring functions
+# ----------------------------
+def get_sugar_points(value, category):
+    for threshold, point in SUGAR_SCORING[category]:
+        if value <= threshold:
+            return point
+    return 10  # max score if higher than highest threshold
+
 def get_energy_points(kj):
     if kj <= 335: return 0
     elif kj <= 670: return 1
@@ -25,19 +40,6 @@ def get_energy_points(kj):
     elif kj <= 2680: return 7
     elif kj <= 3015: return 8
     elif kj <= 3350: return 9
-    else: return 10
-
-def get_sugar_points(sugar):
-    if sugar <= 4.5: return 0
-    elif sugar <= 9: return 1
-    elif sugar <= 13.5: return 2
-    elif sugar <= 18: return 3
-    elif sugar <= 22.5: return 4
-    elif sugar <= 27: return 5
-    elif sugar <= 31: return 6
-    elif sugar <= 36: return 7
-    elif sugar <= 40: return 8
-    elif sugar <= 45: return 9
     else: return 10
 
 def get_sat_fat_points(sat_fat):
@@ -138,7 +140,7 @@ if uploaded_file:
 
                 neg = (
                     get_energy_points(row[required[1]]) +
-                    get_sugar_points(row[required[2]]) +
+                    get_sugar_points(row[required[2]], category) +
                     get_sat_fat_points(row[required[3]]) +
                     get_sodium_points(row[required[4]])
                 )
