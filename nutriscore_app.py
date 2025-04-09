@@ -28,7 +28,7 @@ def get_sugar_points(value, category):
     for threshold, point in SUGAR_SCORING[category]:
         if value <= threshold:
             return point
-    return 10  # max score if higher than highest threshold
+    return 10
 
 def get_energy_points(kj):
     if kj <= 335: return 0
@@ -140,14 +140,18 @@ if uploaded_file:
 
                 if critical_missing:
                     warning_rows.append((row[required[0]], critical_missing))
-                    return None, "Missing critical data"
+                    return pd.Series([None, "Missing critical data", category, None, None, None, None, None])
 
-                neg = (
-                    get_energy_points(row[required[1]]) +
-                    get_sugar_points(row[required[2]], category) +
-                    get_sat_fat_points(row[required[3]]) +
-                    get_sodium_points(row[required[4]])
-                )
+                energy = row[required[1]]
+                sugar = row[required[2]]
+                sat_fat = row[required[3]]
+                sodium = row[required[4]]
+
+                neg_energy = get_energy_points(energy)
+                neg_sugar = get_sugar_points(sugar, category)
+                neg_sat_fat = get_sat_fat_points(sat_fat)
+                neg_sodium = get_sodium_points(sodium)
+                neg = neg_energy + neg_sugar + neg_sat_fat + neg_sodium
 
                 pos_fiber = get_fiber_points(fiber)
                 pos_fruit = get_fruit_points(fruits)
@@ -167,11 +171,12 @@ if uploaded_file:
                 else:  # drink
                     score = neg - (pos_protein + pos_fiber + pos_fruit)
 
-                return score, classify_nutriscore(score, category, row[required[0]])
+                grade = classify_nutriscore(score, category, row[required[0]])
+                return pd.Series([score, grade, category, neg, pos_protein, pos_fiber, pos_fruit, neg - (pos_protein + pos_fiber + pos_fruit)])
             except:
-                return None, "Error"
+                return pd.Series([None, "Error", category, None, None, None, None, None])
 
-        df[['NutriScore Points', 'NutriScore Grade']] = df.apply(lambda row: pd.Series(compute_score(row)), axis=1)
+        df[['NutriScore Points', 'NutriScore Grade', 'Category', 'N-points', 'Protein points', 'Fiber points', 'Fruit/Veg points', 'N-P calculation']] = df.apply(lambda row: compute_score(row), axis=1)
 
         if warning_rows:
             st.warning("Some products have missing critical values (energy, sugar, saturated fat, sodium):")
@@ -179,7 +184,7 @@ if uploaded_file:
                 st.write(f"\n- {product}: missing {', '.join(fields)}")
 
         st.success("NutriScore calculated for all products!")
-        st.dataframe(df[['Products', 'NutriScore Points', 'NutriScore Grade']])
+        st.dataframe(df[['Products', 'Category', 'NutriScore Points', 'NutriScore Grade', 'N-points', 'Protein points', 'Fiber points', 'Fruit/Veg points', 'N-P calculation']])
 
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
