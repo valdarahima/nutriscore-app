@@ -7,7 +7,7 @@ import io
 # ----------------------------
 CATEGORY_THRESHOLDS = {
     "general": [(-float("inf"), 0, "A"), (1, 2, "B"), (3, 10, "C"), (11, 18, "D"), (19, float("inf"), "E")],
-    "drink": [(float("nan"), float("nan"), "A"), (0, 2, "B"), (3, 6, "C"), (7, 9, "D"), (10, float("inf"), "E")],
+    "drink": [(0, 2, "B"), (3, 6, "C"), (7, 9, "D"), (10, float("inf"), "E")],
     "fat": [(-float("inf"), -6, "A"), (-5, 2, "B"), (3, 10, "C"), (11, 18, "D"), (19, float("inf"), "E")]
 }
 
@@ -23,6 +23,7 @@ SUGAR_SCORING = {
 # ----------------------------
 # Component scoring functions
 # ----------------------------
+
 def get_sugar_points(value, category):
     for threshold, point in SUGAR_SCORING[category]:
         if value <= threshold:
@@ -93,7 +94,10 @@ def get_protein_points(protein):
 # ----------------------------
 # Grade classification based on category
 # ----------------------------
-def classify_nutriscore(score, category):
+def classify_nutriscore(score, category, product_name=None):
+    if category == "drink" and isinstance(product_name, str):
+        if product_name.strip().lower() == "water":
+            return "A"
     for low, high, grade in CATEGORY_THRESHOLDS[category]:
         if low <= score <= high:
             return grade
@@ -163,7 +167,7 @@ if uploaded_file:
                 else:  # drink
                     score = neg - (pos_protein + pos_fiber + pos_fruit)
 
-                return score, classify_nutriscore(score, category)
+                return score, classify_nutriscore(score, category, row[required[0]])
             except:
                 return None, "Error"
 
