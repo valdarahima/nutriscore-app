@@ -11,13 +11,55 @@ CATEGORY_THRESHOLDS = {
     "fat": [(-float("inf"), -6, "A"), (-5, 2, "B"), (3, 10, "C"), (11, 18, "D"), (19, float("inf"), "E")]
 }
 
+CATEGORY_MAP = {
+    "General food (incl. red meat and cheese)": "general",
+    "Fats, oils, nuts and seeds": "fat",
+    "Beverages": "drink"
+}
+
 # ----------------------------
-# Real sugar thresholds by category
+# Component thresholds by category
 # ----------------------------
 SUGAR_SCORING = {
     "general": [(4.5, 0), (9, 1), (13.5, 2), (18, 3), (22.5, 4), (27, 5), (31, 6), (36, 7), (40, 8), (45, 9)],
     "drink": [(0, 0), (1.5, 1), (3, 2), (4.5, 3), (6, 4), (7.5, 5), (9, 6), (10.5, 7), (12, 8), (13.5, 9)],
     "fat": [(4.5, 0), (9, 1), (13.5, 2), (18, 3), (22.5, 4), (27, 5), (31, 6), (36, 7), (40, 8), (45, 9)]
+}
+
+ENERGY_SCORING = {
+    "general": [(335, 0), (670, 1), (1005, 2), (1340, 3), (1675, 4), (2010, 5), (2345, 6), (2680, 7), (3015, 8), (3350, 9)],
+    "drink": [(30, 0), (90, 1), (150, 2), (210, 3), (240, 4), (270, 5), (300, 6), (330, 7), (360, 8), (390, 9)],
+    "fat": [(120, 0), (240, 1), (360, 2), (480, 3), (600, 4), (720, 5), (840, 6), (960, 7), (1080, 8), (1200, 9)]
+}
+
+SAT_FAT_SCORING = {
+    "general": [(1, 0), (2, 1), (3, 2), (4, 3), (5, 4), (6, 5), (7, 6), (8, 7), (9, 8), (10, 9)],
+    "drink": [(0.1, 0), (0.2, 1), (0.3, 2), (0.4, 3), (0.5, 4), (0.6, 5), (0.7, 6), (0.8, 7), (0.9, 8), (1.0, 9)],
+    "fat": [(2, 0), (4, 1), (6, 2), (8, 3), (10, 4), (12, 5), (14, 6), (16, 7), (18, 8), (20, 9)]
+}
+
+SODIUM_SCORING = {
+    "general": [(90, 0), (180, 1), (270, 2), (360, 3), (450, 4), (540, 5), (630, 6), (720, 7), (810, 8), (900, 9)],
+    "drink": [(30, 0), (60, 1), (90, 2), (120, 3), (150, 4), (180, 5), (210, 6), (240, 7), (270, 8), (300, 9)],
+    "fat": [(90, 0), (180, 1), (270, 2), (360, 3), (450, 4), (540, 5), (630, 6), (720, 7), (810, 8), (900, 9)]
+}
+
+FRUIT_SCORING = {
+    "general": [(40, 0), (60, 1), (80, 2)],
+    "drink": [(40, 0), (60, 1), (80, 2)],
+    "fat": [(40, 0), (60, 1), (80, 2)]
+}
+
+FIBER_SCORING = {
+    "general": [(0.9, 0), (1.9, 1), (2.8, 2), (3.7, 3), (4.7, 4)],
+    "drink": [(0.9, 0), (1.9, 1), (2.8, 2), (3.7, 3), (4.7, 4)],
+    "fat": [(0.9, 0), (1.9, 1), (2.8, 2), (3.7, 3), (4.7, 4)]
+}
+
+PROTEIN_SCORING = {
+    "general": [(1.6, 0), (3.2, 1), (4.8, 2), (6.4, 3), (8.0, 4)],
+    "drink": [(0.9, 0), (1.9, 1), (2.8, 2), (3.7, 3), (4.7, 4)],
+    "fat": [(0.9, 0), (1.9, 1), (2.8, 2), (3.7, 3), (4.7, 4)]
 }
 
 # ----------------------------
@@ -30,170 +72,88 @@ def get_sugar_points(value, category):
             return point
     return 10
 
-def get_energy_points(kj):
-    if kj <= 335: return 0
-    elif kj <= 670: return 1
-    elif kj <= 1005: return 2
-    elif kj <= 1340: return 3
-    elif kj <= 1675: return 4
-    elif kj <= 2010: return 5
-    elif kj <= 2345: return 6
-    elif kj <= 2680: return 7
-    elif kj <= 3015: return 8
-    elif kj <= 3350: return 9
-    else: return 10
+def get_energy_points(kj, category):
+    for threshold, point in ENERGY_SCORING[category]:
+        if kj <= threshold:
+            return point
+    return 10
 
-def get_sat_fat_points(sat_fat):
-    if sat_fat <= 1: return 0
-    elif sat_fat <= 2: return 1
-    elif sat_fat <= 3: return 2
-    elif sat_fat <= 4: return 3
-    elif sat_fat <= 5: return 4
-    elif sat_fat <= 6: return 5
-    elif sat_fat <= 7: return 6
-    elif sat_fat <= 8: return 7
-    elif sat_fat <= 9: return 8
-    elif sat_fat <= 10: return 9
-    else: return 10
+def get_sat_fat_points(sat_fat, category):
+    for threshold, point in SAT_FAT_SCORING[category]:
+        if sat_fat <= threshold:
+            return point
+    return 10
 
-def get_sodium_points(sodium):
-    if sodium <= 90: return 0
-    elif sodium <= 180: return 1
-    elif sodium <= 270: return 2
-    elif sodium <= 360: return 3
-    elif sodium <= 450: return 4
-    elif sodium <= 540: return 5
-    elif sodium <= 630: return 6
-    elif sodium <= 720: return 7
-    elif sodium <= 810: return 8
-    elif sodium <= 900: return 9
-    else: return 10
+def get_sodium_points(sodium, category):
+    for threshold, point in SODIUM_SCORING[category]:
+        if sodium <= threshold:
+            return point
+    return 10
 
-def get_fruit_points(percent):
-    if percent <= 40: return 0
-    elif percent <= 60: return 1
-    elif percent <= 80: return 2
-    else: return 5
+def get_fruit_points(percent, category):
+    for threshold, point in FRUIT_SCORING[category]:
+        if percent <= threshold:
+            return point
+    return 5
 
-def get_fiber_points(fiber):
-    if fiber <= 0.9: return 0
-    elif fiber <= 1.9: return 1
-    elif fiber <= 2.8: return 2
-    elif fiber <= 3.7: return 3
-    elif fiber <= 4.7: return 4
-    else: return 5
+def get_fiber_points(fiber, category):
+    for threshold, point in FIBER_SCORING[category]:
+        if fiber <= threshold:
+            return point
+    return 5
 
-def get_protein_points(protein):
-    if protein <= 1.6: return 0
-    elif protein <= 3.2: return 1
-    elif protein <= 4.8: return 2
-    elif protein <= 6.4: return 3
-    elif protein <= 8.0: return 4
-    else: return 5
+def get_protein_points(protein, category):
+    for threshold, point in PROTEIN_SCORING[category]:
+        if protein <= threshold:
+            return point
+    return 5
+
+def compute_score(row, category):
+    fiber = row['Fibre (g/100 g)'] if pd.notnull(row['Fibre (g/100 g)']) else 0
+    fruits = row['Fruits, vegetables, pulses, nuts, and rapeseed...'] if pd.notnull(row['Fruits, vegetables, pulses, nuts, and rapeseed...']) else 0
+    protein = row['Protein (g/100 g)'] if pd.notnull(row['Protein (g/100 g)']) else 0
+    energy = row['Energy (kJ/100 g)']
+    sugar = row['Sugar (g/100 g)']
+    sat_fat = row['Saturates (g/100 g)']
+    sodium = row['Sodium (mg/100 g)']
+
+    neg_energy = get_energy_points(energy, category)
+    neg_sugar = get_sugar_points(sugar, category)
+    neg_sat_fat = get_sat_fat_points(sat_fat, category)
+    neg_sodium = get_sodium_points(sodium, category)
+    neg = neg_energy + neg_sugar + neg_sat_fat + neg_sodium
+
+    pos_fiber = get_fiber_points(fiber, category)
+    pos_fruit = get_fruit_points(fruits, category)
+    pos_protein = get_protein_points(protein, category)
+
+    return neg, pos_protein, pos_fiber, pos_fruit
 
 # ----------------------------
-# Grade classification based on category
+# Streamlit interface
 # ----------------------------
-def classify_nutriscore(score, category, product_name=None):
-    if category == "drink" and isinstance(product_name, str):
-        if product_name.strip().lower() == "water":
-            return "A"
-    for low, high, grade in CATEGORY_THRESHOLDS[category]:
-        if low <= score <= high:
-            return grade
-    return "?"
+st.title("Nutri-Score Calculator")
 
-# ----------------------------
-# Streamlit App Interface
-# ----------------------------
-st.title("NutriScore Bulk Calculator")
-st.write("Upload your Excel file with product info and get NutriScore grades calculated for each item.")
+category_display = st.selectbox("Select food category:", list(CATEGORY_MAP.keys()))
+category = CATEGORY_MAP[category_display]
 
-category = st.selectbox("Select product category", ["general", "drink", "fat"], format_func=lambda x: x.capitalize())
+uploaded = st.file_uploader("Upload Excel file", type="xlsx")
 
-uploaded_file = st.file_uploader("Upload Excel File (.xlsx)", type=["xlsx"])
+if uploaded:
+    df = pd.read_excel(uploaded)
 
-if uploaded_file:
-    df = pd.read_excel(uploaded_file, sheet_name=0)
-    df.columns = [col.strip().split("\n")[0].strip() for col in df.columns]
+    def enrich(row):
+        neg, prot, fib, fruit = compute_score(row, category)
+        n_p = neg - (prot + fib + fruit)
+        grade = next((g for low, high, g in CATEGORY_THRESHOLDS[category] if low <= n_p <= high), "?")
+        return pd.Series({
+            "NutriScore Grade": grade,
+            "N-points": neg,
+            "Protein points": prot,
+            "Fiber points": fib,
+            "Fruit/Veg points": fruit,
+            "N-P calculation": n_p,
+        })
 
-    required = ['Products', 'Energy (kJ/100 g)', 'Sugar (g/100 g)', 'Saturates (g/100 g)',
-                'Sodium (mg/100 g)', 'Fruits, vegetables, pulses, nuts, and rapeseed...',
-                'Fibre (g/100 g)', 'Protein (g/100 g)']
-
-    missing = [r for r in required if r not in df.columns]
-    if missing:
-        st.error(f"Missing required columns: {missing}")
-    else:
-        warning_rows = []
-
-        def compute_score(row):
-            try:
-                fiber = row[required[6]] if pd.notnull(row[required[6]]) else 0
-                fruits = row[required[5]] if pd.notnull(row[required[5]]) else 0
-                protein = row[required[7]] if pd.notnull(row[required[7]]) else 0
-
-                critical_missing = []
-                for idx in [1, 2, 3, 4]:
-                    if pd.isnull(row[required[idx]]):
-                        critical_missing.append(required[idx])
-
-                if critical_missing:
-                    warning_rows.append((row[required[0]], critical_missing))
-                    return pd.Series([None, "Missing critical data", category, None, None, None, None, None])
-
-                energy = row[required[1]]
-                sugar = row[required[2]]
-                sat_fat = row[required[3]]
-                sodium = row[required[4]]
-
-                neg_energy = get_energy_points(energy)
-                neg_sugar = get_sugar_points(sugar, category)
-                neg_sat_fat = get_sat_fat_points(sat_fat)
-                neg_sodium = get_sodium_points(sodium)
-                neg = neg_energy + neg_sugar + neg_sat_fat + neg_sodium
-
-                pos_fiber = get_fiber_points(fiber)
-                pos_fruit = get_fruit_points(fruits)
-                pos_protein = get_protein_points(protein)
-
-                if category == "fat":
-                    if neg >= 7:
-                        score = neg - pos_fiber - pos_fruit
-                    else:
-                        score = neg - (pos_protein + pos_fiber + pos_fruit)
-                elif category == "general":
-                    if neg > 11:
-                        pos_protein = min(pos_protein, 2)
-                        score = neg - pos_fiber - pos_fruit - pos_protein
-                    else:
-                        score = neg - (pos_protein + pos_fiber + pos_fruit)
-                else:  # drink
-                    score = neg - (pos_protein + pos_fiber + pos_fruit)
-
-                grade = classify_nutriscore(score, category, row[required[0]])
-                return pd.Series([score, grade, category, neg, pos_protein, pos_fiber, pos_fruit, neg - (pos_protein + pos_fiber + pos_fruit)])
-            except:
-                return pd.Series([None, "Error", category, None, None, None, None, None])
-
-        df[['NutriScore Points', 'NutriScore Grade', 'Category', 'N-points', 'Protein points', 'Fiber points', 'Fruit/Veg points', 'N-P calculation']] = df.apply(lambda row: compute_score(row), axis=1)
-
-        if warning_rows:
-            st.warning("Some products have missing critical values (energy, sugar, saturated fat, sodium):")
-            for product, fields in warning_rows:
-                st.write(f"\n- {product}: missing {', '.join(fields)}")
-
-        st.success("NutriScore calculated for all products!")
-        st.dataframe(df[['Products', 'Category', 'NutriScore Points', 'NutriScore Grade', 'N-points', 'Protein points', 'Fiber points', 'Fruit/Veg points', 'N-P calculation']])
-
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False)
-        output.seek(0)
-
-        st.download_button(
-            label="Download Results as Excel",
-            data=output,
-            file_name="nutriscore_results.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+    results = df.apply(enrich, axis=1)
+    st.dataframe(pd.concat([df, results], axis=1))
