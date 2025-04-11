@@ -100,7 +100,7 @@ def compute_score(row, category):
     n_sat_fat = get_sat_fat_points(row["Saturates (g/100 g)"], category)
     n_sodium = get_sodium_points(row["Sodium (mg/100 g)"], category)
 
-    p_fruit = get_fruit_points(row["Fruits, vegetables, pulses, nuts, and rapeseed oil, walnut oil, and olive oil (%)"], category)
+    p_fruit = get_fruit_points(row["Fruits, vegetables, and pulses (%)"], category)
     p_fibre = get_fibre_points(row["Fibre (g/100 g)"], category)
     p_protein = get_protein_points(row["Protein (g/100 g)"], category)
 
