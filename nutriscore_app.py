@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import io
 
 # ----------------------------
 # Category-specific scoring thresholds
@@ -18,142 +17,121 @@ CATEGORY_MAP = {
 }
 
 # ----------------------------
-# Component thresholds by category
+# Component scoring tables (capped as per Nutri-Score guidelines)
 # ----------------------------
-SUGAR_SCORING = {
-    "general": [(4.5, 0), (9, 1), (13.5, 2), (18, 3), (22.5, 4), (27, 5), (31, 6), (36, 7), (40, 8), (45, 9)],
-    "drink": [(0, 0), (1.5, 1), (3, 2), (4.5, 3), (6, 4), (7.5, 5), (9, 6), (10.5, 7), (12, 8), (13.5, 9)],
-    "fat": [(4.5, 0), (9, 1), (13.5, 2), (18, 3), (22.5, 4), (27, 5), (31, 6), (36, 7), (40, 8), (45, 9)]
+ENERGY_SCORING = {
+    "general": [(0, 335, 0), (335, 670, 1), (670, 1005, 2), (1005, 1340, 3), (1340, 1675, 4), (1675, 2010, 5), (2010, 2345, 6), (2345, 2680, 7), (2680, 3015, 8), (3015, 3350, 9), (3350, float("inf"), 10)],
+    "drink": [(0, 30, 0), (30, 90, 1), (90, 150, 2), (150, 210, 3), (210, 240, 4), (240, 270, 5), (270, 300, 6), (300, 330, 7), (330, 360, 8), (360, 390, 9), (390, float("inf"), 10)],
+    "fat": [(0, 120, 0), (120, 240, 1), (240, 360, 2), (360, 480, 3), (480, 600, 4), (600, 720, 5), (720, 840, 6), (840, 960, 7), (960, 1080, 8), (1080, 1200, 9), (1200, float("inf"), 10)]
 }
 
-ENERGY_SCORING = {
-    "general": [(335, 0), (670, 1), (1005, 2), (1340, 3), (1675, 4), (2010, 5), (2345, 6), (2680, 7), (3015, 8), (3350, 9)],
-    "drink": [(30, 0), (90, 1), (150, 2), (210, 3), (240, 4), (270, 5), (300, 6), (330, 7), (360, 8), (390, 9)],
-    "fat": [(120, 0), (240, 1), (360, 2), (480, 3), (600, 4), (720, 5), (840, 6), (960, 7), (1080, 8), (1200, 9)]
+SUGAR_SCORING = {
+    "general": [(0, 3.4, 0), (3.4, 6.8, 1), (6.8, 10, 2), (10, 14, 3), (14, 17, 4), (17, 20, 5), (20, 24, 6), (24, 27, 7), (27, 31, 8), (31, 34, 9), (34, 37, 10), (37, 41, 11), (41, 44, 12), (44, 48, 13), (48, 51, 14), (51, float("inf"), 15)],
+    "drink": [(0, 0.5, 0), (0.5, 2, 1), (2, 3.5, 2), (3.5, 5, 3), (5, 6, 4), (6, 7, 5), (7, 8, 6), (8, 9, 7), (9, 10, 8), (10, 11, 9), (11, float("inf"), 10)],
+    "fat": [(0, 3.4, 0), (3.4, 6.8, 1), (6.8, 10, 2), (10, 14, 3), (14, 17, 4), (17, 20, 5), (20, 24, 6), (24, 27, 7), (27, 31, 8), (31, 34, 9), (34, 37, 10), (37, 41, 11), (41, 44, 12), (44, 48, 13), (48, 51, 14), (51, float("inf"), 15)]
 }
 
 SAT_FAT_SCORING = {
-    "general": [(1, 0), (2, 1), (3, 2), (4, 3), (5, 4), (6, 5), (7, 6), (8, 7), (9, 8), (10, 9)],
-    "drink": [(0.1, 0), (0.2, 1), (0.3, 2), (0.4, 3), (0.5, 4), (0.6, 5), (0.7, 6), (0.8, 7), (0.9, 8), (1.0, 9)],
-    "fat": [(2, 0), (4, 1), (6, 2), (8, 3), (10, 4), (12, 5), (14, 6), (16, 7), (18, 8), (20, 9)]
+    "general": [(0, 1, 0), (1, 2, 1), (2, 3, 2), (3, 4, 3), (4, 5, 4), (5, 6, 5), (6, 7, 6), (7, 8, 7), (8, 9, 8), (9, 10, 9), (10, float("inf"), 10)],
+    "drink": [(0, 1, 0), (1, 2, 1), (2, 3, 2), (3, 4, 3), (4, 5, 4), (5, 6, 5), (6, 7, 6), (7, 8, 7), (8, 9, 8), (9, 10, 9), (10, float("inf"), 10)],
+    "fat": [(0, 10, 0), (10, 16, 1), (16, 22, 2), (22, 28, 3), (28, 34, 4), (34, 40, 5), (40, 46, 6), (46, 52, 7), (52, 58, 8), (58, 64, 9), (64, float("inf"), 10)]
 }
 
 SODIUM_SCORING = {
-    "general": [(90, 0), (180, 1), (270, 2), (360, 3), (450, 4), (540, 5), (630, 6), (720, 7), (810, 8), (900, 9)],
-    "drink": [(30, 0), (60, 1), (90, 2), (120, 3), (150, 4), (180, 5), (210, 6), (240, 7), (270, 8), (300, 9)],
-    "fat": [(90, 0), (180, 1), (270, 2), (360, 3), (450, 4), (540, 5), (630, 6), (720, 7), (810, 8), (900, 9)]
+    "general": [(0, 0.2, 0), (0.2, 0.4, 1), (0.4,0.6,2), (0.6, 0.8, 3), (0.8, 1, 4), (1, 1.2, 5), (1.2, 1.4, 6), (1.4, 1.6, 7) (1.6, 1.8, 8), (1.8, 2, 9), (2, 2.2, 10), (2.2, 2.4, 11), (2.4, 2.6, 12), (2.6, 2.8, 13), (2.8, 3.0, 14), (3.0, 3.2, 15), (3.2, 3.4, 16), (3.4, 3.6, 17), (3.6, 3.8, 18), (3.8, 4.0, 19), (4.0, float("inf"), 20)],
+    "drink": [(0, 0.2, 0), (0.2, 0.4, 1), (0.4,0.6,2), (0.6, 0.8, 3), (0.8, 1, 4), (1, 1.2, 5), (1.2, 1.4, 6), (1.4, 1.6, 7) (1.6, 1.8, 8), (1.8, 2, 9), (2, 2.2, 10), (2.2, 2.4, 11), (2.4, 2.6, 12), (2.6, 2.8, 13), (2.8, 3.0, 14), (3.0, 3.2, 15), (3.2, 3.4, 16), (3.4, 3.6, 17), (3.6, 3.8, 18), (3.8, 4.0, 19), (4.0, float("inf"), 20)],
+    "fat": [(0, 0.2, 0), (0.2, 0.4, 1), (0.4,0.6,2), (0.6, 0.8, 3), (0.8, 1, 4), (1, 1.2, 5), (1.2, 1.4, 6), (1.4, 1.6, 7) (1.6, 1.8, 8), (1.8, 2, 9), (2, 2.2, 10), (2.2, 2.4, 11), (2.4, 2.6, 12), (2.6, 2.8, 13), (2.8, 3.0, 14), (3.0, 3.2, 15), (3.2, 3.4, 16), (3.4, 3.6, 17), (3.6, 3.8, 18), (3.8, 4.0, 19), (4.0, float("inf"), 20)]
 }
 
 FRUIT_SCORING = {
-    "general": [(40, 0), (60, 1), (80, 2)],
-    "drink": [(40, 0), (60, 1), (80, 2)],
-    "fat": [(40, 0), (60, 1), (80, 2)]
+    "general": [(0, 40, 0), (40, 60, 1), (60, 80, 2), (80, float("inf"), 5)],
+    "drink": [(0, 40, 0), (40, 60, 2), (60, 80, 4), (80, float("inf"), 5)],
+    "fat": [(0, 40, 0), (40, 60, 1), (60, 80, 2), (80, float("inf"), 6)]
 }
 
-FIBER_SCORING = {
-    "general": [(0.9, 0), (1.9, 1), (2.8, 2), (3.7, 3), (4.7, 4)],
-    "drink": [(0.9, 0), (1.9, 1), (2.8, 2), (3.7, 3), (4.7, 4)],
-    "fat": [(0.9, 0), (1.9, 1), (2.8, 2), (3.7, 3), (4.7, 4)]
+FIBRE_SCORING = {
+    "general": [(0, 3.0, 0), (3.0, 4.1, 1), (4.1, 5.2, 2), (5.2, 6.3, 3), (6.3, 7.4, 4), (7.4, float("inf"), 5)],
+    "drink": [(0, 3.0, 0), (3.0, 4.1, 1), (4.1, 5.2, 2), (5.2, 6.3, 3), (6.3, 7.4, 4), (7.4, float("inf"), 5)],
+    "fat": [(0, 3.0, 0), (3.0, 4.1, 1), (4.1, 5.2, 2), (5.2, 6.3, 3), (6.3, 7.4, 4), (7.4, float("inf"), 5)]
 }
 
 PROTEIN_SCORING = {
-    "general": [(1.6, 0), (3.2, 1), (4.8, 2), (6.4, 3), (8.0, 4)],
-    "drink": [(0.9, 0), (1.9, 1), (2.8, 2), (3.7, 3), (4.7, 4)],
-    "fat": [(0.9, 0), (1.9, 1), (2.8, 2), (3.7, 3), (4.7, 4)]
+    "general": [(0, 2.4, 0), (2.4, 4.8, 1), (4.8, 7.2, 2), (7.2, 9.6, 3), (9.6, 12, 4), (12, 14, 5), (14, 17, 6), (17 float("inf"), 7)],
+    "drink": [(0, 1.2, 0), (1.2, 1.5, 1), (1.5, 1.8, 2), (1.8, 2.1, 3), (2.1, 2.4, 4), (2.4, 2.7, 5), (2.7, 3.0, 6), (3.0, float("inf"), 7)],
+    "fat": [(0, 2.4, 0), (2.4, 4.8, 1), (4.8, 7.2, 2), (7.2, 9.6, 3), (9.6, 12, 4), (12, 14, 5), (14, 17, 6), (17 float("inf"), 7)]
 }
 
 # ----------------------------
-# Component scoring functions
+# Nutrient scoring functions
 # ----------------------------
+def score_component(value, scoring_table):
+    for low, high, point in scoring_table:
+        if low < value <= high:
+            return point
+    return scoring_table[-1][2]
+
+def get_energy_points(value, category):
+    return score_component(value, ENERGY_SCORING[category])
 
 def get_sugar_points(value, category):
-    for threshold, point in SUGAR_SCORING[category]:
-        if value <= threshold:
-            return point
-    return 10
+    return score_component(value, SUGAR_SCORING[category])
 
-def get_energy_points(kj, category):
-    for threshold, point in ENERGY_SCORING[category]:
-        if kj <= threshold:
-            return point
-    return 10
+def get_sat_fat_points(value, category):
+    return score_component(value, SAT_FAT_SCORING[category])
 
-def get_sat_fat_points(sat_fat, category):
-    for threshold, point in SAT_FAT_SCORING[category]:
-        if sat_fat <= threshold:
-            return point
-    return 10
+def get_sodium_points(value, category):
+    return score_component(value, SODIUM_SCORING[category])
 
-def get_sodium_points(sodium, category):
-    for threshold, point in SODIUM_SCORING[category]:
-        if sodium <= threshold:
-            return point
-    return 10
+def get_fruit_points(value, category):
+    return score_component(value, FRUIT_SCORING[category])
 
-def get_fruit_points(percent, category):
-    for threshold, point in FRUIT_SCORING[category]:
-        if percent <= threshold:
-            return point
-    return 5
+def get_fibre_points(value, category):
+    return score_component(value, FIBRE_SCORING[category])
 
-def get_fiber_points(fiber, category):
-    for threshold, point in FIBER_SCORING[category]:
-        if fiber <= threshold:
-            return point
-    return 5
-
-def get_protein_points(protein, category):
-    for threshold, point in PROTEIN_SCORING[category]:
-        if protein <= threshold:
-            return point
-    return 5
-
-def compute_score(row, category):
-    fiber = row['Fibre (g/100 g)'] if pd.notnull(row['Fibre (g/100 g)']) else 0
-    fruits = row['Fruits, vegetables, pulses, nuts, and rapeseed...'] if pd.notnull(row['Fruits, vegetables, pulses, nuts, and rapeseed...']) else 0
-    protein = row['Protein (g/100 g)'] if pd.notnull(row['Protein (g/100 g)']) else 0
-    energy = row['Energy (kJ/100 g)']
-    sugar = row['Sugar (g/100 g)']
-    sat_fat = row['Saturates (g/100 g)']
-    sodium = row['Sodium (mg/100 g)']
-
-    neg_energy = get_energy_points(energy, category)
-    neg_sugar = get_sugar_points(sugar, category)
-    neg_sat_fat = get_sat_fat_points(sat_fat, category)
-    neg_sodium = get_sodium_points(sodium, category)
-    neg = neg_energy + neg_sugar + neg_sat_fat + neg_sodium
-
-    pos_fiber = get_fiber_points(fiber, category)
-    pos_fruit = get_fruit_points(fruits, category)
-    pos_protein = get_protein_points(protein, category)
-
-    return neg, pos_protein, pos_fiber, pos_fruit
+def get_protein_points(value, category):
+    return score_component(value, PROTEIN_SCORING[category])
 
 # ----------------------------
-# Streamlit interface
+# Main Nutri-Score computation
+# ----------------------------
+def compute_score(row, category):
+    n_energy = get_energy_points(row["Energy (kJ/100 g)"], category)
+    n_sugar = get_sugar_points(row["Sugar (g/100 g)"], category)
+    n_sat_fat = get_sat_fat_points(row["Saturates (g/100 g)"], category)
+    n_sodium = get_sodium_points(row["Sodium (mg/100 g)"], category)
+
+    p_fruit = get_fruit_points(row["Fruits, vegetables, pulses, nuts, and rapeseed oil, walnut oil, and olive oil (%)"], category)
+    p_fibre = get_fibre_points(row["Fibre (g/100 g)"], category)
+    p_protein = get_protein_points(row["Protein (g/100 g)"], category)
+
+    n_total = n_energy + n_sugar + n_sat_fat + n_sodium
+    p_total = p_fruit + p_fibre + p_protein
+
+    if category == "fat":
+        score = n_total - (p_fruit + p_fibre) if n_total >= 7 else n_total - p_total
+    else:
+        score = n_total - (p_fruit + p_fibre) if (n_total >= 11 and p_fruit < 5) else n_total - p_total
+
+    return score
+
+# ----------------------------
+# Streamlit App UI
 # ----------------------------
 st.title("Nutri-Score Calculator")
 
+uploaded_file = st.file_uploader("Upload your product data (Excel file):", type=[".xlsx"])
 category_display = st.selectbox("Select food category:", list(CATEGORY_MAP.keys()))
 category = CATEGORY_MAP[category_display]
 
-uploaded = st.file_uploader("Upload Excel file", type="xlsx")
+if uploaded_file:
+    df = pd.read_excel(uploaded_file)
+    df["Nutri-Score Points"] = df.apply(lambda row: compute_score(row, category), axis=1)
 
-if uploaded:
-    df = pd.read_excel(uploaded)
+    def get_grade(score):
+        for low, high, grade in CATEGORY_THRESHOLDS[category]:
+            if low < score <= high:
+                return grade
+        return "E"
 
-    def enrich(row):
-        neg, prot, fib, fruit = compute_score(row, category)
-        n_p = neg - (prot + fib + fruit)
-        grade = next((g for low, high, g in CATEGORY_THRESHOLDS[category] if low <= n_p <= high), "?")
-        return pd.Series({
-            "NutriScore Grade": grade,
-            "N-points": neg,
-            "Protein points": prot,
-            "Fiber points": fib,
-            "Fruit/Veg points": fruit,
-            "N-P calculation": n_p,
-        })
-
-    results = df.apply(enrich, axis=1)
-    st.dataframe(pd.concat([df, results], axis=1))
+    df["Nutri-Score Grade"] = df["Nutri-Score Points"].apply(get_grade)
+    st.dataframe(df)
