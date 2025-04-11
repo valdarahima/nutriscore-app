@@ -126,6 +126,10 @@ category = CATEGORY_MAP[category_display]
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
     df["Nutri-Score Points"] = df.apply(lambda row: compute_score(row, category), axis=1)
+    df["Energy Score"] = df["Energy (kJ/100 g)"].apply(lambda x: get_energy_points(x, category))
+    df["Sugar Score"] = df["Sugar (g/100 g)"].apply(lambda x: get_sugar_points(x, category))
+    df["Saturates Score"] = df["Saturates (g/100 g)"].apply(lambda x: get_sat_fat_points(x, category))
+    df["Salt Score"] = df["Sodium (mg/100 g)"].apply(lambda x: get_sodium_points(x, category))
 
     def get_grade(score):
         for low, high, grade in CATEGORY_THRESHOLDS[category]:
