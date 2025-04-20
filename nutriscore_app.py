@@ -38,9 +38,8 @@ SAT_FAT_SCORING = {
 }
 
 SODIUM_SCORING = {
-    "general": [(0, 0.2, 0), (0.2, 0.4, 1), (0.4,0.6,2), (0.6, 0.8, 3), (0.8, 1, 4), (1, 1.2, 5), (1.2, 1.4, 6), (1.4, 1.6, 7), (1.6, 1.8, 8), (1.8, 2, 9), (2, 2.2, 10), (2.2, 2.4, 11), (2.4, 2.6, 12), (2.6, 2.8, 13), (2.8, 3.0, 14), (3.0, 3.2, 15), (3.2, 3.4, 16), (3.4, 3.6, 17), (3.6, 3.8, 18), (3.8, 4.0, 19), (4.0, float("inf"), 20)],
-    "drink": [(0, 0.2, 0), (0.2, 0.4, 1), (0.4,0.6,2), (0.6, 0.8, 3), (0.8, 1, 4), (1, 1.2, 5), (1.2, 1.4, 6), (1.4, 1.6, 7), (1.6, 1.8, 8), (1.8, 2, 9), (2, 2.2, 10), (2.2, 2.4, 11), (2.4, 2.6, 12), (2.6, 2.8, 13), (2.8, 3.0, 14), (3.0, 3.2, 15), (3.2, 3.4, 16), (3.4, 3.6, 17), (3.6, 3.8, 18), (3.8, 4.0, 19), (4.0, float("inf"), 20)],
-    "fat": [(0, 0.2, 0), (0.2, 0.4, 1), (0.4,0.6,2), (0.6, 0.8, 3), (0.8, 1, 4), (1, 1.2, 5), (1.2, 1.4, 6), (1.4, 1.6, 7), (1.6, 1.8, 8), (1.8, 2, 9), (2, 2.2, 10), (2.2, 2.4, 11), (2.4, 2.6, 12), (2.6, 2.8, 13), (2.8, 3.0, 14), (3.0, 3.2, 15), (3.2, 3.4, 16), (3.4, 3.6, 17), (3.6, 3.8, 18), (3.8, 4.0, 19), (4.0, float("inf"), 20)]
+    "general": [(0, 0.2, 0), (0.2, 0.4, 1), (0.4, 0.6, 2), (0.6, 0.8, 3), (0.8, 1, 4), (1, 1.2, 5), (1.2, 1.4, 6), (1.4, 1.6, 7), (1.6, 1.8, 8), (1.8, 2, 9), (2, 2.2, 10), (2.2, 2.4, 11), (2.4, 2.6, 12), (2.6, 2.8, 13), (2.8, 3.0, 14), (3.0, 3.2, 15), (3.2, 3.4, 16), (3.4, 3.6, 17), (3.6, 3.8, 18), (3.8, 4.0, 19), (4.0, float("inf"), 20)],
+    "drink": [(0, 0.2, 0), (0.2, 0.4, 1), (0.4, 0.6, 2), (0.6, 0.8, 3), (0.8, 1, 4), (1, 1.2, 5), (1.2, 1.4, 6), (1.4, 1.6, 7), (1.6, 1.8, 8), (1.8, 2, 9), (2, 2.2, 10), (2.2, 2.4, 11), (2.4, 2.6, 12), (2.6, 2.8, 13), (2.8, 3.0, 14), (3.0, 3.2, 15), (3.2, 3.4, 16), (3.4, 3.6, 17), (3.6, 3.8, 18), (3.8, 4.0, 19), (4.0, float("inf"), 20)]
 }
 
 FRUIT_SCORING = {
@@ -73,6 +72,11 @@ def score_component(value, scoring_table):
 def get_energy_points(value, category):
     return score_component(value, ENERGY_SCORING[category])
 
+def get_energy_from_sat_fat_points(sat_fat_value, category):
+    # Calculate energy from saturated fatty acids (sat_fat × 37 kJ/g)
+    energy_from_sat_fat = sat_fat_value * 37
+    return score_component(energy_from_sat_fat, ENERGY_SCORING[category])
+
 def get_sugar_points(value, category):
     return score_component(value, SUGAR_SCORING[category])
 
@@ -88,31 +92,106 @@ def get_fruit_points(value, category):
 def get_fibre_points(value, category):
     return score_component(value, FIBRE_SCORING[category])
 
-def get_protein_points(value, category):
-    return score_component(value, PROTEIN_SCORING[category])
+def get_protein_points(value, category, is_red_meat=False):
+    points = score_component(value, PROTEIN_SCORING[category])
+    # Apply cap of 2 points for red meat products
+    if category == "general" and is_red_meat:
+        points = min(points, 2)
+    return points
 
 # ----------------------------
 # Main Nutri-Score computation
 # ----------------------------
 def compute_score(row, category):
-    n_energy = get_energy_points(row["Energy (kJ/100 g)"], category)
+    # Get unfavorable components (N)
+    if category == "fat":
+        # For fats/oils, use energy from saturated fatty acids
+        n_energy = get_energy_from_sat_fat_points(row["Saturates (g/100 g)"], category)
+    else:
+        n_energy = get_energy_points(row["Energy (kJ/100 g)"], category)
+    
     n_sugar = get_sugar_points(row["Sugar (g/100 g)"], category)
     n_sat_fat = get_sat_fat_points(row["Saturates (g/100 g)"], category)
-    n_sodium = get_sodium_points(row["Sodium (mg/100 g)"], category)
-
+    n_sodium = get_sodium_points(row["Salt (g/100 g)"], category)
+    
+    # Add sweeteners penalty for beverages
+    sweetener_points = 4 if category == "drink" and row.get("Contains sweeteners", False) else 0
+    
+    # Get favorable components (P)
     p_fruit = get_fruit_points(row["Fruits, vegetables, and pulses (%)"], category)
     p_fibre = get_fibre_points(row["Fibre (g/100 g)"], category)
-    p_protein = get_protein_points(row["Protein (g/100 g)"], category)
-
-    n_total = n_energy + n_sugar + n_sat_fat + n_sodium
+    
+    # Apply red meat protein cap if needed
+    is_red_meat = row.get("Is red meat", False)
+    p_protein = get_protein_points(row["Protein (g/100 g)"], category, is_red_meat)
+    
+    # Calculate total points
+    n_total = n_energy + n_sugar + n_sat_fat + n_sodium + sweetener_points
     p_total = p_fruit + p_fibre + p_protein
-
-    if category == "fat":
-        score = n_total - (p_fruit + p_fibre) if n_total >= 7 else n_total - p_total
-    else:
-        score = n_total - (p_fruit + p_fibre) if (n_total >= 11 and p_fruit < 5) else n_total - p_total
-
+    
+    # Calculate score based on category and algorithm
+    is_cheese = row.get("Is cheese", False)
+    
+    if category == "drink":
+        # For beverages: always subtract all P points
+        score = n_total - p_total
+    elif category == "fat":
+        # For fats, oils, nuts and seeds
+        if n_total >= 7:
+            score = n_total - (p_fibre + p_fruit)
+        else:
+            score = n_total - p_total
+    else:  # General foods (incl. red meat and cheese)
+        if n_total >= 11 and not is_cheese:
+            score = n_total - (p_fibre + p_fruit)
+        else:
+            score = n_total - p_total
+            
     return score
+
+# ----------------------------
+# Helper functions
+# ----------------------------
+def get_individual_scores(row, category):
+    """Calculate and return individual component scores"""
+    scores = {}
+    
+    # N-component scores
+    if category == "fat":
+        scores["Energy Score"] = get_energy_from_sat_fat_points(row["Saturates (g/100 g)"], category)
+    else:
+        scores["Energy Score"] = get_energy_points(row["Energy (kJ/100 g)"], category)
+    
+    scores["Sugar Score"] = get_sugar_points(row["Sugar (g/100 g)"], category)
+    scores["Saturates Score"] = get_sat_fat_points(row["Saturates (g/100 g)"], category)
+    scores["Salt Score"] = get_sodium_points(row["Salt (g/100 g)"], category)
+    
+    # Sweetener penalty for beverages
+    if category == "drink" and row.get("Contains sweeteners", False):
+        scores["Sweetener Penalty"] = 4
+    else:
+        scores["Sweetener Penalty"] = 0
+    
+    # P-component scores
+    scores["Fruit Score"] = get_fruit_points(row["Fruits, vegetables, and pulses (%)"], category)
+    scores["Fibre Score"] = get_fibre_points(row["Fibre (g/100 g)"], category)
+    
+    is_red_meat = row.get("Is red meat", False)
+    scores["Protein Score"] = get_protein_points(row["Protein (g/100 g)"], category, is_red_meat)
+    
+    return scores
+
+def get_grade(score, category):
+    """Determine the Nutri-Score grade based on the score and category"""
+    # Special case for water
+    if category == "drink" and score <= 0 and "is_water" in row and row["is_water"]:
+        return "A"
+    
+    # Regular scoring
+    for low, high, grade in CATEGORY_THRESHOLDS[category]:
+        if low < score <= high:
+            return grade
+    return "E"  # Default to E if no threshold matched
 
 # ----------------------------
 # Streamlit App UI
@@ -123,19 +202,60 @@ uploaded_file = st.file_uploader("Upload your product data (Excel file):", type=
 category_display = st.selectbox("Select food category:", list(CATEGORY_MAP.keys()))
 category = CATEGORY_MAP[category_display]
 
+# Display category-specific input fields
+if category == "general":
+    st.info("For general foods, you should include 'Is red meat' and 'Is cheese' columns in your Excel file to apply special rules.")
+elif category == "drink":
+    st.info("For beverages, you should include a 'Contains sweeteners' column (Boolean) and optional 'is_water' column in your Excel file.")
+elif category == "fat":
+    st.info("For fats/oils category, energy is calculated from saturated fatty acids (Saturates × 37 kJ/g).")
+
 if uploaded_file:
-    df = pd.read_excel(uploaded_file)
-    df["Nutri-Score Points"] = df.apply(lambda row: compute_score(row, category), axis=1)
-    df["Energy Score"] = df["Energy (kJ/100 g)"].apply(lambda x: get_energy_points(x, category))
-    df["Sugar Score"] = df["Sugar (g/100 g)"].apply(lambda x: get_sugar_points(x, category))
-    df["Saturates Score"] = df["Saturates (g/100 g)"].apply(lambda x: get_sat_fat_points(x, category))
-    df["Salt Score"] = df["Sodium (mg/100 g)"].apply(lambda x: get_sodium_points(x, category))
-
-    def get_grade(score):
-        for low, high, grade in CATEGORY_THRESHOLDS[category]:
-            if low < score <= high:
-                return grade
-        return "E"
-
-    df["Nutri-Score Grade"] = df["Nutri-Score Points"].apply(get_grade)
-    st.dataframe(df)
+    try:
+        df = pd.read_excel(uploaded_file)
+        
+        # Ensure required columns exist
+        required_columns = ["Energy (kJ/100 g)", "Sugar (g/100 g)", "Saturates (g/100 g)", 
+                            "Salt (g/100 g)", "Fruits, vegetables, and pulses (%)", 
+                            "Fibre (g/100 g)", "Protein (g/100 g)"]
+        
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            st.error(f"Missing required columns: {', '.join(missing_columns)}")
+        else:
+            # Calculate Nutri-Score
+            df["Nutri-Score Points"] = df.apply(lambda row: compute_score(row, category), axis=1)
+            
+            # Add individual component scores
+            component_scores = df.apply(lambda row: get_individual_scores(row, category), axis=1)
+            component_df = pd.DataFrame(component_scores.tolist())
+            
+            # Combine dataframes
+            result_df = pd.concat([df, component_df], axis=1)
+            
+            # Calculate final grade
+            result_df["Nutri-Score Grade"] = result_df.apply(lambda row: get_grade(row["Nutri-Score Points"], category), axis=1)
+            
+            # Calculate N and P totals for display
+            result_df["N-points Total"] = result_df["Energy Score"] + result_df["Sugar Score"] + \
+                                          result_df["Saturates Score"] + result_df["Salt Score"] + \
+                                          result_df["Sweetener Penalty"]
+            
+            result_df["P-points Total"] = result_df["Fruit Score"] + result_df["Fibre Score"] + \
+                                          result_df["Protein Score"]
+            
+            # Display the results
+            st.subheader("Nutri-Score Results")
+            st.dataframe(result_df)
+            
+            # Download button for results
+            csv = result_df.to_csv(index=False)
+            st.download_button(
+                label="Download results as CSV",
+                data=csv,
+                file_name="nutri_score_results.csv",
+                mime="text/csv",
+            )
+            
+    except Exception as e:
+        st.error(f"Error processing file: {str(e)}")
