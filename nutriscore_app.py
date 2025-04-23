@@ -106,8 +106,10 @@ def get_sodium_points(value, category):
     return score_component(value, SALT_SCORING[category])
 
 def get_fruit_points(value, category):
-    rule = "fruit_bev" if category == "drink" else "inclusive"
-    return score_component(value, FRUIT_SCORING[category], rule)
+    if category == "drink":
+        return score_component(value, FRUIT_SCORING[category], rule_type="fruit_bev")
+    else:
+        return score_component(value, FRUIT_SCORING[category])
 
 def get_fibre_points(value, category):
     return score_component(value, FIBRE_SCORING[category])
