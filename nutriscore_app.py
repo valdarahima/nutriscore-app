@@ -27,7 +27,19 @@ ENERGY_SCORING = {
 
 SUGAR_SCORING = {
     "general": [(0, 4.5, 0), (4.5, 9, 1), (9, 13.5, 2), (13.5, 18, 3), (18, 22.5, 4), (22.5, 27, 5), (27, 31, 6), (31, 36, 7), (36, 40, 8), (40, 45, 9), (45, float("inf"), 10)],
-    "drink": [(0, 1, 0), (1, 2, 1), (2, 3, 2), (3, 4, 3), (4, 5, 4), (5, 6, 5), (6, 7, 6), (7, 8, 7), (8, 9, 8), (9, 10, 9), (10, float("inf"), 10)],
+    "drink": [
+    (float("-inf"), 1, 0),
+    (1, 2, 1),
+    (2, 3, 2),
+    (3, 4, 3),
+    (4, 5, 4),
+    (5, 6, 5),
+    (6, 7, 6),
+    (7, 8, 7),
+    (8, 9, 8),
+    (9, 10, 9),
+    (10, float("inf"), 10)
+    ],
     "fat": [(0, 4.5, 0), (4.5, 9, 1), (9, 13.5, 2), (13.5, 18, 3), (18, 22.5, 4), (22.5, 27, 5), (27, 31, 6), (31, 36, 7), (36, 40, 8), (40, 45, 9), (45, float("inf"), 10)]
 }
 
@@ -37,7 +49,7 @@ SAT_FAT_SCORING = {
     "fat": [(0, 10, 0), (10, 16, 1), (16, 22, 2), (22, 28, 3), (28, 34, 4), (34, 40, 5), (40, 46, 6), (46, 52, 7), (52, 58, 8), (58, 64, 9), (64, float("inf"), 10)]
 }
 
-SODIUM_SCORING = {
+SALT_SCORING = {
     "general": [(0, 90, 0), (90, 180, 1), (180, 270, 2), (270, 360, 3), (360, 450, 4), (450, 540, 5), (540, 630, 6), (630, 720, 7), (720, 810, 8), (810, 900, 9), (900, float("inf"), 10)],
     "drink": [(0, 90, 0), (90, 180, 1), (180, 270, 2), (270, 360, 3), (360, 450, 4), (450, 540, 5), (540, 630, 6), (630, 720, 7), (720, 810, 8), (810, 900, 9), (900, float("inf"), 10)]
 }
@@ -63,11 +75,15 @@ PROTEIN_SCORING = {
 # ----------------------------
 # Nutrient scoring functions
 # ----------------------------
-def score_component(value, scoring_table):
+def score_component(value, scoring_table, rule_type="inclusive"):
     for low, high, point in scoring_table:
-        if low < value <= high:
-            return point
-    return scoring_table[-1][2]
+        if rule_type == "inclusive":
+            if low <= value <= high:
+                return point
+        elif rule_type == "exclusive_lower":
+            if low < value <= high:
+                return point
+    return scoring_table[-1][2]  # fallback
 
 def get_energy_points(value, category):
     return score_component(value, ENERGY_SCORING[category])
@@ -80,10 +96,11 @@ def get_sugar_points(value, category):
     return score_component(value, SUGAR_SCORING[category])
 
 def get_sat_fat_points(value, category):
-    return score_component(value, SAT_FAT_SCORING[category])
+    rule = "exclusive_lower" if category == "drink" else "inclusive"
+    return score_component(value, SAT_FAT_SCORING[category], rule)
 
 def get_sodium_points(value, category):
-    return score_component(value, SODIUM_SCORING[category])
+    return score_component(value, SALT_SCORING[category])
 
 def get_fruit_points(value, category):
     return score_component(value, FRUIT_SCORING[category])
