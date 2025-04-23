@@ -56,7 +56,7 @@ SALT_SCORING = {
 
 FRUIT_SCORING = {
     "general": [(0, 40, 0), (40, 60, 1), (60, 80, 2), (80, float("inf"), 5)],
-    "drink": [(0, 40, 0), (40, 60, 2), (60, 80, 4), (80, float("inf"), 10)],
+    "drink": [(0, 40, 0), (40, 60, 2), (60, 80, 4), (80, float("inf"), 6)],
     "fat": [(0, 40, 0), (40, 60, 1), (60, 80, 2), (80, float("inf"), 5)]
 }
 
@@ -83,6 +83,9 @@ def score_component(value, scoring_table, rule_type="inclusive"):
         elif rule_type == "exclusive_lower":
             if low < value <= high:
                 return point
+        elif rule_type == "fruit_bev":
+            if low < value <= high or (value == 80 and point == 6):
+                return point
     return scoring_table[-1][2]  # fallback
 
 def get_energy_points(value, category):
@@ -103,7 +106,8 @@ def get_sodium_points(value, category):
     return score_component(value, SALT_SCORING[category])
 
 def get_fruit_points(value, category):
-    return score_component(value, FRUIT_SCORING[category])
+    rule = "fruit_bev" if category == "drink" else "inclusive"
+    return score_component(value, FRUIT_SCORING[category], rule)
 
 def get_fibre_points(value, category):
     return score_component(value, FIBRE_SCORING[category])
