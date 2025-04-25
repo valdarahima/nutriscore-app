@@ -232,21 +232,35 @@ if uploaded_file:
             # Add individual component scores
             component_scores = df.apply(lambda row: get_individual_scores(row, category), axis=1)
             component_df = pd.DataFrame(component_scores.tolist())
+            # Optional: add raw nutrient inputs for visibility (ensures these columns show even if reordered)
+            raw_nutrients = df[[
+                "Energy (kJ/100 g)", "Sugar (g/100 g)", "Saturates (g/100 g)",
+                "Salt (g/100 g)", "Fruits, vegetables, and pulses (%)",
+                "Fibre (g/100 g)", "Protein (g/100 g)"
+            ]].copy()
+
+            # Add sweetener, red meat, and water flags if they exist
+            if "Contains sweeteners" in df.columns:
+                raw_nutrients["Contains sweeteners"] = df["Contains sweeteners"]
+            if "Is red meat" in df.columns:
+                raw_nutrients["Is red meat"] = df["Is red meat"]
+            if "is_water" in df.columns:
+                raw_nutrients["Is Water"] = df["is_water"]
+                        
+            # Combine everything
+            result_df = pd.concat([raw_nutrients, component_df], axis=1)
             
-            # Combine dataframes
-            result_df = pd.concat([df, component_df], axis=1)
+            # Add Nutri-Score Points and Grade
+            result_df["Nutri-Score Points"] = df.apply(lambda row: compute_score(row, category), axis=1)
+            result_df["Nutri-Score Grade"] = df.apply(lambda row: get_grade(compute_score(row, category), category, row), axis=1)
             
-            # Calculate final grade
-            result_df["Nutri-Score Grade"] = result_df.apply(
-                lambda row: get_grade(row["Nutri-Score Points"], category, row), axis=1)
-            
-            # Calculate N and P totals for display
+            # N and P component totals
             result_df["N-points Total"] = result_df["Energy Score"] + result_df["Sugar Score"] + \
-                                        result_df["Saturates Score"] + result_df["Salt Score"] + \
-                                        result_df.get("Sweetener Penalty", 0)
+                                          result_df["Saturates Score"] + result_df["Salt Score"] + \
+                                          result_df.get("Sweetener Penalty", 0)
             
             result_df["P-points Total"] = result_df["Fruit Score"] + result_df["Fibre Score"] + \
-                                        result_df["Protein Score"]
+                                          result_df["Protein Score"]
             
             # Display the results
             st.subheader("Nutri-Score Results")
