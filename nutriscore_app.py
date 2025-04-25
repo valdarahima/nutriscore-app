@@ -263,8 +263,54 @@ if uploaded_file:
                                           result_df["Protein Score"]
             
             # Display the results
-            st.subheader("Nutri-Score Results")
-            st.dataframe(result_df)
+            # Reformat the table to match Excel-style readability
+            final_df = pd.DataFrame()
+            final_df["Product"] = df.index  # Or df["Product Name"] if you have it
+            final_df["Water (without any addition)"] = df.get("is_water", False)
+            final_df["Energy (kJ/100 mL or 100 g)"] = df["Energy (kJ/100 g)"]
+            final_df["Sugar (g/100 mL or 100 g)"] = df["Sugar (g/100 g)"]
+            final_df["Saturates (g/100 mL or 100 g)"] = df["Saturates (g/100 g)"]
+            final_df["Salt (g/100 mL or 100 g)"] = df["Salt (g/100 g)"]
+            final_df["Presence of non-nutritive sweetener (YES/NO)"] = df.get("Contains sweeteners", False)
+            final_df["Fruits, vegetables and legumes (%)"] = df["Fruits, vegetables, and pulses (%)"]
+            final_df["Fibre (g/100 mL or 100 g)"] = df["Fibre (g/100 g)"]
+            final_df["Protein (g/100 mL or 100 g)"] = df["Protein (g/100 g)"]
+            
+            # Scoring
+            final_df["Energy points"] = component_df["Energy Score"]
+            final_df["Sugar points"] = component_df["Sugar Score"]
+            final_df["SFA points"] = component_df["Saturates Score"]
+            final_df["Salt points"] = component_df["Salt Score"]
+            final_df["Sweetener Penalty"] = component_df["Sweetener Penalty"]
+            final_df["FVL points"] = component_df["Fruit Score"]
+            final_df["Fibre points"] = component_df["Fibre Score"]
+            final_df["Protein points"] = component_df["Protein Score"]
+            
+            # Totals and grade
+            final_df["Points A"] = final_df["Energy points"] + final_df["Sugar points"] + final_df["SFA points"] + final_df["Salt points"] + final_df["Sweetener Penalty"]
+            final_df["Points C"] = final_df["FVL points"] + final_df["Fibre points"] + final_df["Protein points"]
+            final_df["Score"] = result_df["Nutri-Score Points"]
+            final_df["Nutri-Score"] = result_df["Nutri-Score Grade"]
+            
+            # Optional: assign a color label
+            def get_color(grade):
+                return {
+                    "A": "Green", "B": "Light Green", "C": "Yellow", "D": "Orange", "E": "Red"
+                }.get(grade, "Gray")
+            final_df["Color"] = final_df["Nutri-Score"].apply(get_color)
+            
+            # Display in Streamlit
+            st.subheader("Nutri-Score Summary Table")
+            st.dataframe(final_df)
+            
+            # Download
+            csv = final_df.to_csv(index=False)
+            st.download_button(
+                label="Download results as CSV",
+                data=csv,
+                file_name="nutri_score_summary.csv",
+                mime="text/csv",
+            )
             
             # Download button for results
             csv = result_df.to_csv(index=False)
