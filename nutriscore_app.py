@@ -326,12 +326,15 @@ if uploaded_file:
                 mime="text/csv",
             )
             
+            # Add spacing or label
+            st.markdown("### Or download as Excel")
+            
             # Excel download button for result_df (complete version)
             excel_buffer = io.BytesIO()
             with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
                 result_df.to_excel(writer, index=False, sheet_name='Nutri-Score Results')
-                writer.save()
-                excel_data = excel_buffer.getvalue()
+            excel_data = excel_buffer.getvalue()
+
             
             st.download_button(
                 label="Download results as Excel",
