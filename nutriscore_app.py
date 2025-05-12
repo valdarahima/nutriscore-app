@@ -331,7 +331,7 @@ if uploaded_file:
             
             # Excel download button for result_df (complete version)
             excel_buffer = io.BytesIO()
-            with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+            with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
                 result_df.to_excel(writer, index=False, sheet_name='Nutri-Score Results')
             excel_data = excel_buffer.getvalue()
 
