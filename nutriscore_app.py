@@ -275,74 +275,8 @@ def get_grade(score, category, row=None):
     return "E"  # Default to E if no match found
 
 # ----------------------------
-# Streamlit App UI
+# Data processing functions (MOVED UP - this was causing the NameError)
 # ----------------------------
-st.title("Nutri-Score Calculator")
-
-uploaded_file = st.file_uploader("Upload your product data (Excel file):", type=["xlsx", "xls", "csv"])
-category_display = st.selectbox("Select food category:", list(CATEGORY_MAP.keys()))
-category = CATEGORY_MAP[category_display]
-
-# Add options for manual entry
-use_manual_entry = st.checkbox("Enter product data manually")
-
-if use_manual_entry:
-    st.subheader("Enter Product Details")
-    product_name = st.text_input("Product Name")
-    energy = st.number_input("Energy (kJ/100g or mL)", min_value=0.0)
-    sugar = st.number_input("Sugar (g/100g or mL)", min_value=0.0)
-    saturates = st.number_input("Saturated Fat (g/100g or mL)", min_value=0.0)
-    salt = st.number_input("Salt (g/100g or mL)", min_value=0.0)
-    fruit_veg = st.number_input("Fruits, vegetables, and pulses (%)", min_value=0.0, max_value=100.0)
-    fiber = st.number_input("Fiber (g/100g or mL)", min_value=0.0)
-    protein = st.number_input("Protein (g/100g or mL)", min_value=0.0)
-    contains_sweeteners = st.checkbox("Contains sweeteners")
-    is_water = st.checkbox("Is water (without any addition)")
-    
-    if st.button("Calculate Nutri-Score"):
-        # Create a single-row DataFrame from manual inputs
-        manual_data = {
-            "Product Name": [product_name],
-            "Energy (kJ/100 g)": [energy],
-            "Sugar (g/100 g)": [sugar],
-            "Saturates (g/100 g)": [saturates],
-            "Salt (g/100 g)": [salt],
-            "Fruits, vegetables, and pulses (%)": [fruit_veg],
-            "Fibre (g/100 g)": [fiber],
-            "Protein (g/100 g)": [protein],
-            "Contains sweeteners": [contains_sweeteners],
-            "is_water": [is_water]
-        }
-        df = pd.DataFrame(manual_data)
-        
-        # Calculate and display results just like with uploaded files
-        result_df = process_dataframe(df, category)
-        display_results(result_df)
-
-elif uploaded_file:
-    try:
-        # Detect file type and read accordingly
-        if uploaded_file.name.endswith('.csv'):
-            df = pd.read_csv(uploaded_file)
-        else:
-            df = pd.read_excel(uploaded_file)
-        
-        # Check required columns
-        required_columns = ["Energy (kJ/100 g)", "Sugar (g/100 g)", "Saturates (g/100 g)", 
-                          "Salt (g/100 g)", "Fruits, vegetables, and pulses (%)", 
-                          "Fibre (g/100 g)", "Protein (g/100 g)"]
-        
-        missing_columns = [col for col in required_columns if col not in df.columns]
-        if missing_columns:
-            st.error(f"Missing required columns: {', '.join(missing_columns)}")
-        else:
-            result_df = process_dataframe(df, category)
-            display_results(result_df)
-            
-    except Exception as e:
-        st.error(f"Error processing file: {str(e)}")
-        st.exception(e)  # Show detailed error for debugging
-
 def process_dataframe(df, category):
     """Process a dataframe to calculate Nutri-Score values"""
     # Calculate individual component scores
@@ -447,8 +381,76 @@ def display_results(result_df):
         mime="text/csv",
     )
 
-# Main entry point if run as a script
-if __name__ == "__main__":
+# ----------------------------
+# Streamlit App UI
+# ----------------------------
+def main():
+    st.title("Nutri-Score Calculator")
+    
+    uploaded_file = st.file_uploader("Upload your product data (Excel file):", type=["xlsx", "xls", "csv"])
+    category_display = st.selectbox("Select food category:", list(CATEGORY_MAP.keys()))
+    category = CATEGORY_MAP[category_display]
+    
+    # Add options for manual entry
+    use_manual_entry = st.checkbox("Enter product data manually")
+    
+    if use_manual_entry:
+        st.subheader("Enter Product Details")
+        product_name = st.text_input("Product Name")
+        energy = st.number_input("Energy (kJ/100g or mL)", min_value=0.0)
+        sugar = st.number_input("Sugar (g/100g or mL)", min_value=0.0)
+        saturates = st.number_input("Saturated Fat (g/100g or mL)", min_value=0.0)
+        salt = st.number_input("Salt (g/100g or mL)", min_value=0.0)
+        fruit_veg = st.number_input("Fruits, vegetables, and pulses (%)", min_value=0.0, max_value=100.0)
+        fiber = st.number_input("Fiber (g/100g or mL)", min_value=0.0)
+        protein = st.number_input("Protein (g/100g or mL)", min_value=0.0)
+        contains_sweeteners = st.checkbox("Contains sweeteners")
+        is_water = st.checkbox("Is water (without any addition)")
+        
+        if st.button("Calculate Nutri-Score"):
+            # Create a single-row DataFrame from manual inputs
+            manual_data = {
+                "Product Name": [product_name],
+                "Energy (kJ/100 g)": [energy],
+                "Sugar (g/100 g)": [sugar],
+                "Saturates (g/100 g)": [saturates],
+                "Salt (g/100 g)": [salt],
+                "Fruits, vegetables, and pulses (%)": [fruit_veg],
+                "Fibre (g/100 g)": [fiber],
+                "Protein (g/100 g)": [protein],
+                "Contains sweeteners": [contains_sweeteners],
+                "is_water": [is_water]
+            }
+            df = pd.DataFrame(manual_data)
+            
+            # Calculate and display results just like with uploaded files
+            result_df = process_dataframe(df, category)
+            display_results(result_df)
+    
+    elif uploaded_file:
+        try:
+            # Detect file type and read accordingly
+            if uploaded_file.name.endswith('.csv'):
+                df = pd.read_csv(uploaded_file)
+            else:
+                df = pd.read_excel(uploaded_file)
+            
+            # Check required columns
+            required_columns = ["Energy (kJ/100 g)", "Sugar (g/100 g)", "Saturates (g/100 g)", 
+                             "Salt (g/100 g)", "Fruits, vegetables, and pulses (%)", 
+                             "Fibre (g/100 g)", "Protein (g/100 g)"]
+            
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                st.error(f"Missing required columns: {', '.join(missing_columns)}")
+            else:
+                result_df = process_dataframe(df, category)
+                display_results(result_df)
+                
+        except Exception as e:
+            st.error(f"Error processing file: {str(e)}")
+            st.exception(e)  # Show detailed error for debugging
+    
     st.sidebar.header("About")
     st.sidebar.info(
         """
@@ -457,3 +459,6 @@ if __name__ == "__main__":
         by providing a simple A to E rating.
         """
     )
+
+if __name__ == "__main__":
+    main()
