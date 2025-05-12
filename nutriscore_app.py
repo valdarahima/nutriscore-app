@@ -56,7 +56,7 @@ SUGAR_SCORING = {
 
 SAT_FAT_SCORING = {
     "general": [(0, 1, 0), (1, 2, 1), (2, 3, 2), (3, 4, 3), (4, 5, 4), (5, 6, 5), (6, 7, 6), (7, 8, 7), (8, 9, 8), (9, 10, 9), (10, float("inf"), 10)],
-    "drink": [(0, 1, 0), (1, 2, 1), (2, 3, 2), (3, 4, 3), (4, 5, 4), (5, 6, 5), (6, 7, 6), (7, 8, 7), (8, 9, 8), (9, 10, 9), (10, float("inf"), 10)],
+    "drink": [(float("-inf"), 1, 0), (1, 2, 1), (2, 3, 2), (3, 4, 3), (4, 5, 4), (5, 6, 5), (6, 7, 6), (7, 8, 7), (8, 9, 8), (9, 10, 9), (10, float("inf"), 10)],
     "fat": [(0, 10, 0), (10, 16, 1), (16, 22, 2), (22, 28, 3), (28, 34, 4), (34, 40, 5), (40, 46, 6), (46, 52, 7), (52, 58, 8), (58, 64, 9), (64, float("inf"), 10)]
 }
 
@@ -325,24 +325,6 @@ if uploaded_file:
                 file_name="nutri_score_results.csv",
                 mime="text/csv",
             )
-            
-            # Add spacing or label
-            st.markdown("### Or download as Excel")
-            
-            # Excel download button for result_df (complete version)
-            excel_buffer = io.BytesIO()
-            with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-                result_df.to_excel(writer, index=False, sheet_name='Nutri-Score Results')
-            excel_data = excel_buffer.getvalue()
-
-            
-            st.download_button(
-                label="Download results as Excel",
-                data=excel_data,
-                file_name="nutri_score_results.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-
             
     except Exception as e:
         st.error(f"Error processing file: {str(e)}")
