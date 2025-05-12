@@ -315,15 +315,9 @@ if uploaded_file:
             st.dataframe(final_df)
             
             # Download
-            csv = final_df.to_csv(index=False)
-            st.download_button(
-                label="Download results as CSV",
-                data=csv,
-                file_name="nutri_score_summary.csv",
-                mime="text/csv",
-            )
-            
-            # Download button for results
+            import io
+
+            # CSV download button for result_df (complete version)
             csv = result_df.to_csv(index=False)
             st.download_button(
                 label="Download results as CSV",
@@ -331,6 +325,21 @@ if uploaded_file:
                 file_name="nutri_score_results.csv",
                 mime="text/csv",
             )
+            
+            # Excel download button for result_df (complete version)
+            excel_buffer = io.BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                result_df.to_excel(writer, index=False, sheet_name='Nutri-Score Results')
+                writer.save()
+                excel_data = excel_buffer.getvalue()
+            
+            st.download_button(
+                label="Download results as Excel",
+                data=excel_data,
+                file_name="nutri_score_results.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
             
     except Exception as e:
         st.error(f"Error processing file: {str(e)}")
