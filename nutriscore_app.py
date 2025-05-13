@@ -434,19 +434,6 @@ def main():
                 df = pd.read_csv(uploaded_file)
             else:
                 df = pd.read_excel(uploaded_file)
-
-            # Clean FVL column to ensure correct numeric type and no formatting issues
-            if "Fruits, vegetables, and pulses (%)" in df.columns:
-                df["Fruits, vegetables, and pulses (%)"] = (
-                    pd.to_numeric(
-                        df["Fruits, vegetables, and pulses (%)"]
-                        .astype(str)
-                        .str.strip()
-                        .str.replace(",", "."),  # Handles commas used in European-style decimals
-                        errors="coerce"
-                    ).fillna(0)  # Any invalid value becomes 0
-                )
-
             
             # Check required columns
             required_columns = ["Energy (kJ/100 g)", "Sugar (g/100 g)", "Saturates (g/100 g)", 
