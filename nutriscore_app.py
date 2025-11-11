@@ -1,3 +1,29 @@
+"""
+Nutri-Score Calculator (2023 Updated Algorithm)
+===============================================
+
+This Streamlit app calculates Nutri-Score points and grades for foods, beverages, 
+and fats/oils/nuts according to the 2023 Nutri-Score algorithm update 
+from Santé publique France.
+
+Main Features
+-------------
+- Reads product nutrient data from Excel/CSV or manual input (via Streamlit)
+- Calculates component points for energy, sugar, saturated fat, salt, fibre, fruit/veg, and protein
+- Applies category-specific rules (e.g., sweetener penalty, red meat protein cap)
+- Returns Nutri-Score points and final grade (A–E)
+
+References
+----------
+Santé publique France. (2023). Nutri-Score: Update of the Algorithm.
+
+--------------------------------------------------------------------------------------
+Author: Valda (valdarahima)
+Date Created: 04-2025
+Last Modified: 11-11-2025
+
+"""
+
 import streamlit as st
 import pandas as pd
 
@@ -235,6 +261,30 @@ def get_individual_scores(row, category):
 # Main Nutri-Score computation
 # ----------------------------
 def compute_score(row, category):
+        """
+    Calculate the total Nutri-Score points for one product.
+
+    Parameters
+    ----------
+    row : pandas.Series
+        Nutrient composition for one product (per 100 g or mL).
+    category : str
+        Product category ("general", "drink", "fat").
+
+    Returns
+    -------
+    int
+        Total Nutri-Score points (lower = healthier).
+
+    Notes
+    -----
+    - Applies +4 sweetener penalty for beverages.
+    - Caps protein points for red meat.
+    - Automatically assigns 0 (A grade) to water.
+    - Different thresholds apply:
+        * General foods: P-points counted only if N < 11
+        * Fats: P-points counted only if N < 7
+    """
     # Special case for water - should always be A grade
     if category == "drink" and row.get("is_water", False):
         return 0
@@ -275,7 +325,7 @@ def compute_score(row, category):
     return score
 
 def get_grade(score, category, row=None):
-    """Determine the Nutri-Score grade based on the score and category"""
+    """Determine the Nutri-Score grade (A-E) based on the score and category"""
     # Special case for water - should always get an A
     if category == "drink" and row is not None and row.get("is_water", False):
         return "A"
@@ -341,7 +391,14 @@ def process_dataframe(df, category):
     return result_df
 
 def display_results(result_df):
-    """Display the results in a formatted table"""
+        """
+    Display the Nutri-Score results in Streamlit and provide CSV download.
+
+    Parameters
+    ----------
+    result_df : pandas.DataFrame
+        DataFrame with computed Nutri-Score results.
+    """
     # Create a clean display table
     display_df = pd.DataFrame()
     
@@ -397,6 +454,20 @@ def display_results(result_df):
 # Streamlit App UI
 # ----------------------------
 def main():
+        """
+    Streamlit app entry point for the Nutri-Score Calculator.
+
+    Enables users to:
+    - Upload a CSV or Excel file of product nutrient data.
+    - Enter data manually for single products.
+    - Select food category and compute Nutri-Score interactively.
+    - View and download results.
+
+    Notes
+    -----
+    The app uses the 2023 Nutri-Score algorithm and supports three product
+    categories: general foods, beverages, and fats/oils/nuts.
+    """
     st.title("Nutri-Score Calculator")
     
     uploaded_file = st.file_uploader("Upload your product data (Excel file):", type=["xlsx", "xls", "csv"])
@@ -474,3 +545,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
