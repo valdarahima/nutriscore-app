@@ -261,7 +261,7 @@ def get_individual_scores(row, category):
 # Main Nutri-Score computation
 # ----------------------------
 def compute_score(row, category):
-        """
+    """
     Calculate the total Nutri-Score points for one product.
 
     Parameters
@@ -545,4 +545,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
