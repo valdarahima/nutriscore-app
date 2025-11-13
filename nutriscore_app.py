@@ -391,7 +391,7 @@ def process_dataframe(df, category):
     return result_df
 
 def display_results(result_df):
-        """
+    """
     Display the Nutri-Score results in Streamlit and provide CSV download.
 
     Parameters
@@ -454,7 +454,7 @@ def display_results(result_df):
 # Streamlit App UI
 # ----------------------------
 def main():
-        """
+    """
     Streamlit app entry point for the Nutri-Score Calculator.
 
     Enables users to:
@@ -545,5 +545,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
