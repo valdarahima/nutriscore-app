@@ -150,7 +150,7 @@ SALT_SCORING = {
 FRUIT_SCORING = {
     "general": [(0, 40, 0), (40, 60, 1), (60, 80, 2), (80, float("inf"), 5)],
     "drink": [
-        (0, 40, 0),
+        (float("-inf"), 40, 0),
         (40, 60, 2),
         (60, 80, 4),
         (80, float("inf"), 6)
@@ -545,6 +545,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
