@@ -480,13 +480,43 @@ def main():
     if use_manual_entry:
         st.subheader("Enter Product Details")
         product_name = st.text_input("Product Name")
-        energy = st.number_input("Energy (kJ/100g or mL)", min_value=0.0)
-        sugar = st.number_input("Sugar (g/100g or mL)", min_value=0.0)
-        saturates = st.number_input("Saturated Fat (g/100g or mL)", min_value=0.0)
-        salt = st.number_input("Salt (g/100g or mL)", min_value=0.0)
-        fruit_veg = st.number_input("Fruits, vegetables, and pulses (%)", min_value=0.0, max_value=100.0)
-        fiber = st.number_input("Fiber (g/100g or mL)", min_value=0.0)
-        protein = st.number_input("Protein (g/100g or mL)", min_value=0.0)
+        
+        # ---- UI safety nets here ----
+        energy = st.number_input(
+            "Energy (kJ/100 g or mL)",
+            min_value=0.0,
+            max_value=4000.0
+        )
+        sugar = st.number_input(
+            "Sugar (g/100 g or mL)",
+            min_value=0.0,
+            max_value=100.0
+        )
+        saturates = st.number_input(
+            "Saturated Fat (g/100 g or mL)",
+            min_value=0.0,
+            max_value=100.0
+        )
+        salt = st.number_input(
+            "Salt (g/100 g or mL)",
+            min_value=0.0,
+            max_value=100.0
+        )
+        fruit_veg = st.number_input(
+            "Fruits, vegetables, and pulses (%)",
+            min_value=0.0,
+            max_value=100.0
+        )
+        fiber = st.number_input(
+            "Fibre (g/100 g or mL)",
+            min_value=0.0,
+            max_value=100.0
+        )
+        protein = st.number_input(
+            "Protein (g/100 g or mL)",
+            min_value=0.0,
+            max_value=100.0
+        )
         contains_sweeteners = st.checkbox("Contains sweeteners")
         is_water = st.checkbox("Is water (without any addition)")
         
@@ -545,6 +575,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
