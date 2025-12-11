@@ -32,7 +32,7 @@ import pandas as pd
 # ----------------------------
 CATEGORY_THRESHOLDS = {
     "general": [(-float("inf"), 0, "A"), (1, 2, "B"), (3, 10, "C"), (11, 18, "D"), (19, float("inf"), "E")],
-    "drink": [(-float("inf"), 0, "A"), (1, 2, "B"), (3, 6, "C"), (7, 9, "D"), (10, float("inf"), "E")],
+    "drink": [(-float("inf"), 2, "B"), (3, 6, "C"), (7, 9, "D"), (10, float("inf"), "E")],
     "fat": [(-float("inf"), -6, "A"), (-5, 2, "B"), (3, 10, "C"), (11, 18, "D"), (19, float("inf"), "E")]
 }
 
@@ -575,6 +575,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
